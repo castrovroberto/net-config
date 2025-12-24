@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: pricing-service
+  profiles:
+    active: dev
+
+server:
+  port: 8082
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Service URLs
+services:
+  catalog:
+    url: http://localhost:8080
+  configuration:
+    url: http://localhost:8081
+
+# Pricing configuration
+pricing:
+  volume-discount:
+    switch-threshold: 5
+    discount-percent: 10
+  bundle-discount:
+    capacity-threshold: 80
+    discount-percent: 5
+  support-addon:
+    percent: 20
+  partner-discount:
+    percent: 15
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+
+logging:
+  level:
+    com.netconfig: DEBUG
+

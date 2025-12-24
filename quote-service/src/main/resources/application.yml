@@ -1,0 +1,71 @@
+spring:
+  application:
+    name: quote-service
+  profiles:
+    active: dev
+
+server:
+  port: 8083
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Service URLs
+services:
+  catalog:
+    url: http://localhost:8080
+  configuration:
+    url: http://localhost:8081
+  pricing:
+    url: http://localhost:8082
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  datasource:
+    url: jdbc:postgresql://localhost:5432/quotes
+    username: netconfig
+    password: netconfig123
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: netconfig
+    password: netconfig123
+
+logging:
+  level:
+    com.netconfig: DEBUG
+    org.springframework.amqp: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    url: jdbc:h2:mem:quotes-test
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  rabbitmq:
+    host: localhost
+    port: 5672
+

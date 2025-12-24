@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: catalog-service
+  profiles:
+    active: dev
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  data:
+    mongodb:
+      uri: mongodb://netconfig:netconfig123@localhost:27017/catalog?authSource=admin
+
+logging:
+  level:
+    com.netconfig: DEBUG
+    org.springframework.data.mongodb: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/catalog-test
+
+logging:
+  level:
+    com.netconfig: DEBUG
+

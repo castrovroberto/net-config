@@ -1,0 +1,45 @@
+spring:
+  application:
+    name: configuration-service
+  profiles:
+    active: dev
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+# Service URLs
+services:
+  catalog:
+    url: http://localhost:8080
+
+---
+spring:
+  config:
+    activate:
+      on-profile: dev
+  data:
+    mongodb:
+      uri: mongodb://netconfig:netconfig123@localhost:27017/configurations?authSource=admin
+
+logging:
+  level:
+    com.netconfig: DEBUG
+
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+  data:
+    mongodb:
+      uri: mongodb://localhost:27017/configurations-test
+
