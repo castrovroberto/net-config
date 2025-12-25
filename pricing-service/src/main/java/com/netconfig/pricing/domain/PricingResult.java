@@ -13,7 +13,9 @@ public class PricingResult {
     private String configurationId;
     private List<PricingLineItem> lineItems = new ArrayList<>();
     private BigDecimal subtotal = BigDecimal.ZERO;
-    private BigDecimal totalDiscount = BigDecimal.ZERO;
+    private BigDecimal lineItemDiscount = BigDecimal.ZERO;  // Discounts on individual items
+    private BigDecimal orderDiscount = BigDecimal.ZERO;     // Order-level discounts (bundle, partner, etc.)
+    private BigDecimal totalDiscount = BigDecimal.ZERO;     // Combined total discount
     private BigDecimal serviceAddOn = BigDecimal.ZERO;
     private BigDecimal grandTotal = BigDecimal.ZERO;
     private String currency = "USD";
@@ -53,6 +55,22 @@ public class PricingResult {
 
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public BigDecimal getLineItemDiscount() {
+        return lineItemDiscount;
+    }
+
+    public void setLineItemDiscount(BigDecimal lineItemDiscount) {
+        this.lineItemDiscount = lineItemDiscount;
+    }
+
+    public BigDecimal getOrderDiscount() {
+        return orderDiscount;
+    }
+
+    public void setOrderDiscount(BigDecimal orderDiscount) {
+        this.orderDiscount = orderDiscount;
     }
 
     public BigDecimal getTotalDiscount() {
@@ -119,14 +137,27 @@ public class PricingResult {
         this.discountDescriptions.add(description);
     }
 
+    /**
+     * Add an order-level discount (bundle, partner, etc.).
+     */
+    public void addOrderDiscount(BigDecimal discount) {
+        this.orderDiscount = this.orderDiscount.add(discount);
+        recalculateTotals();
+    }
+
+    /**
+     * Recalculate totals from line items and order discounts.
+     */
     public void recalculateTotals() {
         this.subtotal = lineItems.stream()
                 .map(PricingLineItem::getLineTotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         
-        this.totalDiscount = lineItems.stream()
+        this.lineItemDiscount = lineItems.stream()
                 .map(PricingLineItem::getDiscountAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+        
+        this.totalDiscount = lineItemDiscount.add(orderDiscount);
         
         this.grandTotal = subtotal
                 .subtract(totalDiscount)

@@ -14,6 +14,10 @@ public class PricingContext {
     private String customerTier; // STANDARD, PARTNER, ENTERPRISE
     private List<PricingLineItem> lineItems;
     private Map<String, Object> options = new HashMap<>();
+    
+    // Rack utilization info (optional, for bundle discount)
+    private Integer rackUnitsUsed;
+    private Integer rackCapacity;
 
     public PricingContext() {
     }
@@ -64,15 +68,42 @@ public class PricingContext {
         this.options = options;
     }
 
+    public Integer getRackUnitsUsed() {
+        return rackUnitsUsed;
+    }
+
+    public void setRackUnitsUsed(Integer rackUnitsUsed) {
+        this.rackUnitsUsed = rackUnitsUsed;
+    }
+
+    public Integer getRackCapacity() {
+        return rackCapacity;
+    }
+
+    public void setRackCapacity(Integer rackCapacity) {
+        this.rackCapacity = rackCapacity;
+    }
+
     public boolean hasOption(String key) {
         return options.containsKey(key) && Boolean.TRUE.equals(options.get(key));
     }
 
     public int getSwitchCount() {
+        if (lineItems == null) return 0;
         return lineItems.stream()
                 .filter(item -> "SWITCH".equals(item.getProductType()))
                 .mapToInt(PricingLineItem::getQuantity)
                 .sum();
+    }
+
+    /**
+     * Get rack utilization percentage.
+     */
+    public Integer getRackUtilizationPercent() {
+        if (rackUnitsUsed == null || rackCapacity == null || rackCapacity == 0) {
+            return null;
+        }
+        return (int) ((double) rackUnitsUsed / rackCapacity * 100);
     }
 }
 

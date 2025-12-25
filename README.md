@@ -1,53 +1,66 @@
-# NetConfig - Mini CPQ Engine
+# ⚡ NetConfig CPQ
 
-A simplified Configure, Price, Quote (CPQ) system for network hardware. This project demonstrates polyglot persistence, event-driven architecture, and design patterns in a Spring Boot microservices context.
+A **Configure-Price-Quote (CPQ)** system for network hardware, built to demonstrate enterprise architecture patterns including microservices, polyglot persistence, event-driven design, and domain-driven business logic.
 
-## 🏗️ Architecture Overview
+![Java](https://img.shields.io/badge/Java-21-orange)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.1-green)
+![MongoDB](https://img.shields.io/badge/MongoDB-7.0-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
+![RabbitMQ](https://img.shields.io/badge/RabbitMQ-3.13-orange)
+
+## 🎯 Project Overview
+
+NetConfig simulates a simplified CPQ system for a network hardware vendor, focusing on:
+
+- **Configure (C)**: Build rack configurations with switches, PSUs, and accessories
+- **Price (P)**: Calculate pricing with volume discounts, partner tiers, and support add-ons
+- **Quote (Q)**: Generate immutable quotes with async PDF generation
+
+### Architecture Highlights
+
+| Aspect | Implementation |
+|--------|----------------|
+| **Polyglot Persistence** | MongoDB (flexible catalog & configs) + PostgreSQL (ACID quotes) |
+| **Event-Driven** | RabbitMQ for async PDF generation |
+| **Design Patterns** | Strategy (pricing), Chain of Responsibility (validation) |
+| **API Documentation** | OpenAPI/Swagger for all services |
+| **Observability** | Correlation IDs, structured logging |
+
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                         NetConfig CPQ                           │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌──────────────┐     ┌──────────────┐     ┌──────────────┐     │
-│  │   Catalog    │     │Configuration │     │   Pricing    │     │
-│  │   Service    │────▶│   Service    │────▶│   Engine     │     │
-│  │  (MongoDB)   │     │  (MongoDB)   │     │  (Strategy)  │     │
-│  │  :8080       │     │  :8081       │     │  :8082       │     │
-│  └──────────────┘     └──────────────┘     └──────────────┘     │
-│                              │                    │             │
-│                              │                    ▼             │
-│                              │           ┌──────────────┐       │
-│                              └──────────▶│    Quote     │       │
-│                                          │   Service    │       │
-│                                          │ (PostgreSQL) │       │
-│                                          │  :8083       │       │
-│                                          └──────────────┘       │
-│                                                 │               │
-│                                                 ▼               │
-│                                          ┌──────────────┐       │
-│                                          │  RabbitMQ    │       │
-│                                          │   Events     │       │
-│                                          └──────────────┘       │
-└─────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                           Web UI (SPA)                              │
+│                        http://localhost:8080                        │
+└─────────────────────────────────────────────────────────────────────┘
+                                    │
+        ┌───────────────────────────┼───────────────────────────┐
+        ▼                           ▼                           ▼
+┌───────────────┐         ┌───────────────┐         ┌───────────────┐
+│   Catalog     │         │ Configuration │         │   Pricing     │
+│   Service     │◄────────│   Service     │────────►│   Service     │
+│    :8080      │         │    :8081      │         │    :8082      │
+└───────────────┘         └───────────────┘         └───────────────┘
+        │                         │                         │
+        ▼                         ▼                         │
+┌───────────────┐         ┌───────────────┐                 │
+│   MongoDB     │         │   MongoDB     │                 │
+│  (Products)   │         │   (Configs)   │                 │
+└───────────────┘         └───────────────┘                 │
+                                                            │
+                          ┌───────────────┐                 │
+                          │    Quote      │◄────────────────┘
+                          │   Service     │
+                          │    :8083      │
+                          └───────────────┘
+                                  │
+                    ┌─────────────┼─────────────┐
+                    ▼                           ▼
+            ┌───────────────┐         ┌───────────────┐
+            │  PostgreSQL   │         │   RabbitMQ    │
+            │   (Quotes)    │         │  (PDF Queue)  │
+            └───────────────┘         └───────────────┘
 ```
-
-## 📋 Services
-
-| Service | Port | Database | Description |
-|---------|------|----------|-------------|
-| **catalog-service** | 8080 | MongoDB | Product catalog with flexible schema |
-| **configuration-service** | 8081 | MongoDB | Rack configuration management |
-| **pricing-service** | 8082 | - | Pricing engine with Strategy Pattern |
-| **quote-service** | 8083 | PostgreSQL | Quote generation with ACID compliance |
-
-## 🛠️ Tech Stack
-
-- **Java 21** - Latest LTS with records, virtual threads
-- **Spring Boot 3.4** - Framework
-- **MongoDB** - Product catalog (flexible schema)
-- **PostgreSQL** - Quotes (ACID compliance)
-- **RabbitMQ** - Async event processing
-- **Gradle** - Build tool with Kotlin DSL
 
 ## 🚀 Quick Start
 
@@ -55,185 +68,340 @@ A simplified Configure, Price, Quote (CPQ) system for network hardware. This pro
 
 - Java 21+
 - Docker & Docker Compose
-- Gradle 8.x (or use the wrapper)
+- curl & jq (for demo script)
 
-### 1. Start Infrastructure
-
-```bash
-# Start MongoDB, PostgreSQL, RabbitMQ and admin UIs
-docker-compose up -d
-
-# Verify services are healthy
-docker-compose ps
-```
-
-**Admin UIs:**
-- Mongo Express: http://localhost:8081
-- pgAdmin: http://localhost:8082 (admin@netconfig.local / admin123)
-- RabbitMQ Management: http://localhost:15672 (netconfig / netconfig123)
-
-### 2. Build the Project
+### Start Everything
 
 ```bash
-# Build all modules
-./gradlew build
+# 1. Start infrastructure (databases, message broker)
+docker compose up -d
 
-# Skip tests for faster build
+# 2. Build the project
 ./gradlew build -x test
+
+# 3. Start all services (in separate terminals or background)
+./scripts/start-services.sh
+
+# Or start individually:
+java -jar catalog-service/build/libs/catalog-service-0.0.1-SNAPSHOT.jar &
+java -jar configuration-service/build/libs/configuration-service-0.0.1-SNAPSHOT.jar &
+java -jar pricing-service/build/libs/pricing-service-0.0.1-SNAPSHOT.jar &
+java -jar quote-service/build/libs/quote-service-0.0.1-SNAPSHOT.jar &
 ```
 
-### 3. Run Services
+### Access Points
 
-Run each service in a separate terminal:
+| Service | URL |
+|---------|-----|
+| **Web UI** | http://localhost:8080 |
+| **Catalog API** | http://localhost:8080/swagger-ui.html |
+| **Configuration API** | http://localhost:8081/swagger-ui.html |
+| **Pricing API** | http://localhost:8082/swagger-ui.html |
+| **Quote API** | http://localhost:8083/swagger-ui.html |
+| Mongo Express | http://localhost:8180 |
+| pgAdmin | http://localhost:8181 (admin@netconfig.local / admin123) |
+| RabbitMQ | http://localhost:15672 (guest / guest) |
+
+### Run Demo Script
 
 ```bash
-# Terminal 1: Catalog Service
-./gradlew :catalog-service:bootRun
-
-# Terminal 2: Configuration Service
-./gradlew :configuration-service:bootRun
-
-# Terminal 3: Pricing Service
-./gradlew :pricing-service:bootRun
-
-# Terminal 4: Quote Service
-./gradlew :quote-service:bootRun
+./scripts/demo.sh
 ```
 
-### 4. Verify Services
+This walks through the complete CPQ flow with colorful output.
 
-```bash
-# Check health endpoints
-curl http://localhost:8080/actuator/health  # Catalog
-curl http://localhost:8081/actuator/health  # Configuration
-curl http://localhost:8082/actuator/health  # Pricing
-curl http://localhost:8083/actuator/health  # Quote
-```
+## 📦 Services
 
-## 📚 API Examples
+### Catalog Service (Port 8080)
 
-### Catalog Service (MongoDB)
+Manages the product catalog with MongoDB's flexible schema.
+
+**Product Types:**
+- `RACK` - Server racks (42U, 24U, etc.)
+- `SWITCH` - Network switches (Catalyst, Nexus)
+- `PSU` - Power supply units
+- `CABLE` - DAC cables, fiber
+- `SFP_MODULE` - Transceiver modules
+
+**API Examples:**
 
 ```bash
 # List all products
-curl http://localhost:8080/api/v1/products
+curl http://localhost:8080/api/v1/products | jq
 
-# Get products by type
-curl http://localhost:8080/api/v1/products?type=SWITCH
+# Filter by type
+curl http://localhost:8080/api/v1/products?type=SWITCH | jq
 
-# Get product by SKU
-curl http://localhost:8080/api/v1/products/sku/SW-CATALYST-9300-24
-
-# Find switches with minimum ports
-curl http://localhost:8080/api/v1/products/switches/min-ports/24
+# Get specific product
+curl http://localhost:8080/api/v1/products/sku/SW-CATALYST-9300-48 | jq
 ```
 
-## 🗃️ Sample Data
+### Configuration Service (Port 8081)
 
-The catalog service loads sample products on startup (dev profile):
+Manages rack configurations and validates using Chain of Responsibility pattern.
 
-| Type | SKU | Name | Price |
-|------|-----|------|-------|
-| RACK | RACK-42U-STD | 42U Standard Server Rack | $2,499.99 |
-| SWITCH | SW-CATALYST-9300-24 | Catalyst 9300 24-Port | $4,599.99 |
-| SWITCH | SW-NEXUS-9336C | Nexus 9336C-FX2 | $24,999.99 |
-| PSU | PSU-2000W-TITANIUM | 2000W Titanium PDU | $1,299.99 |
+**Validation Rules:**
+1. `RackRequiredRule` - Must have a base rack
+2. `ComponentExistsRule` - All components must exist in catalog
+3. `MinimumPsuRule` - PSU required if powered devices present
+4. `PowerBudgetRule` - Total power draw ≤ PSU capacity
+5. `RackCapacityRule` - Total rack units ≤ rack size
+6. `RedundantPsuRule` - Warning if single PSU (advisory)
 
-## 🧪 Testing
+**API Examples:**
 
 ```bash
-# Run all tests
+# Create configuration
+curl -X POST http://localhost:8081/api/v1/configurations \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Data Center Rack",
+    "customerId": "acme-corp",
+    "rackSku": "RACK-42U-STD"
+  }'
+
+# Add component
+curl -X POST http://localhost:8081/api/v1/configurations/{id}/components \
+  -H "Content-Type: application/json" \
+  -d '{"productSku": "SW-CATALYST-9300-48", "quantity": 4}'
+
+# Validate
+curl -X POST http://localhost:8081/api/v1/configurations/{id}/validate | jq
+```
+
+### Pricing Service (Port 8082)
+
+Calculates pricing using the Strategy pattern for composable rules.
+
+**Pricing Strategies:**
+1. `BasePriceStrategy` - Sum of component prices × quantities
+2. `VolumeDiscountStrategy` - 10% off switches when count > 5
+3. `BundleDiscountStrategy` - 5% off when rack utilization > 75%
+4. `PartnerDiscountStrategy` - Tier-based: Standard (5%), Gold (10%), Platinum (15%)
+5. `SupportAddOnStrategy` - Premium support adds 20% of subtotal
+
+**API Examples:**
+
+```bash
+# Calculate pricing
+curl -X POST http://localhost:8082/api/v1/pricing/calculate \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configurationId": "YOUR_CONFIG_ID",
+    "customerTier": "PARTNER",
+    "options": {
+      "include_support": true,
+      "support_tier": "PREMIUM"
+    }
+  }' | jq
+```
+
+### Quote Service (Port 8083)
+
+Creates immutable quotes with PostgreSQL and async PDF generation via RabbitMQ.
+
+**Quote Lifecycle:**
+1. `PENDING` - Quote created, PDF generating
+2. `READY` - PDF ready for download
+3. `ACCEPTED` - Customer accepted
+4. `REJECTED` - Customer rejected
+5. `EXPIRED` - Past 30-day validity
+
+**API Examples:**
+
+```bash
+# Create quote
+curl -X POST http://localhost:8083/api/v1/quotes \
+  -H "Content-Type: application/json" \
+  -d '{
+    "configurationId": "YOUR_CONFIG_ID",
+    "customerName": "Acme Corporation",
+    "customerEmail": "buyer@acme.com",
+    "customerTier": "PARTNER",
+    "includeSupport": true,
+    "supportTier": "PREMIUM"
+  }' | jq
+
+# Get quote
+curl http://localhost:8083/api/v1/quotes/{id} | jq
+
+# Accept quote
+curl -X POST http://localhost:8083/api/v1/quotes/{id}/accept | jq
+```
+
+## 🔍 Design Patterns
+
+### Chain of Responsibility (Validation)
+
+```java
+// Rules are executed in order, collecting results
+@Component
+@Order(1)
+public class RackRequiredRule implements ConfigurationRule {
+    @Override
+    public RuleResult evaluate(ValidationContext context) {
+        if (context.getRack() == null) {
+            return RuleResult.failure("RACK_REQUIRED", "Configuration must have a base rack");
+        }
+        return RuleResult.success("Rack present");
+    }
+}
+```
+
+### Strategy Pattern (Pricing)
+
+```java
+// Each strategy can modify the pricing result
+@Component
+@Order(2)
+public class VolumeDiscountStrategy implements PricingStrategy {
+    @Override
+    public void apply(PricingContext context, PricingResult result) {
+        if (context.getSwitchCount() > 5) {
+            BigDecimal discount = result.getSwitchSubtotal()
+                .multiply(new BigDecimal("0.10"));
+            result.addOrderDiscount(discount, "Volume Discount - 10% off switches");
+        }
+    }
+}
+```
+
+## 📊 Sample Data
+
+On startup, the Catalog Service loads 15 sample products:
+
+| SKU | Type | Name | Price |
+|-----|------|------|-------|
+| RACK-42U-STD | RACK | 42U Standard Rack | $2,500 |
+| SW-CATALYST-9300-48 | SWITCH | Catalyst 9300-48P | $8,500 |
+| SW-NEXUS-93180YC | SWITCH | Nexus 93180YC-FX | $18,000 |
+| PSU-2000W-TITANIUM | PSU | 2000W Titanium PSU | $1,200 |
+| ... | ... | ... | ... |
+
+## 🔧 Development
+
+### Project Structure
+
+```
+net-config/
+├── common/                     # Shared DTOs, exceptions, filters
+├── catalog-service/            # Product catalog (MongoDB)
+├── configuration-service/      # Config & validation (MongoDB)
+├── pricing-service/            # Pricing engine (stateless)
+├── quote-service/              # Quote management (PostgreSQL + RabbitMQ)
+├── docker/                     # Docker init scripts
+├── scripts/                    # Utility scripts
+│   ├── demo.sh                 # Full CPQ flow demo
+│   ├── start-services.sh       # Start all services
+│   └── stop-services.sh        # Stop all services
+└── docker-compose.yml          # Infrastructure
+```
+
+### Run Tests
+
+```bash
+# All tests
 ./gradlew test
 
-# Run tests for specific module
-./gradlew :catalog-service:test
-
-# Run with test containers (integration tests)
-./gradlew integrationTest
+# Specific service
+./gradlew :configuration-service:test
 ```
 
-## 📁 Project Structure
+### Correlation ID Tracing
 
-```
-netconfig/
-├── common/                     # Shared DTOs and utilities
-│   └── src/main/java/
-│       └── com/netconfig/common/
-│           ├── dto/            # ApiResponse, ProductDto, ValidationResult
-│           ├── event/          # QuoteRequestedEvent, QuoteReadyEvent
-│           └── exception/      # Custom exceptions
-│
-├── catalog-service/            # Product catalog (MongoDB)
-│   └── src/main/java/
-│       └── com/netconfig/catalog/
-│           ├── domain/         # Product, ProductType
-│           ├── repository/     # ProductRepository
-│           ├── service/        # ProductService
-│           ├── controller/     # ProductController
-│           └── config/         # DataLoader
-│
-├── configuration-service/      # Rack configuration
-│   └── src/main/java/
-│       └── com/netconfig/configuration/
-│           └── domain/         # RackConfiguration, ConfigurationItem
-│
-├── pricing-service/            # Pricing engine
-│   └── src/main/java/
-│       └── com/netconfig/pricing/
-│           ├── domain/         # PricingContext, PricingResult
-│           └── strategy/       # PricingStrategy interface
-│
-├── quote-service/              # Quote generation (PostgreSQL + RabbitMQ)
-│   └── src/main/java/
-│       └── com/netconfig/quote/
-│           ├── domain/         # Quote, QuoteLineItem
-│           ├── repository/     # QuoteRepository
-│           ├── config/         # RabbitMQConfig
-│           └── messaging/      # EventPublisher, EventListener
-│
-├── docker-compose.yml          # Infrastructure
-├── build.gradle.kts            # Root build file
-└── settings.gradle.kts         # Module definitions
+All requests include correlation IDs for distributed tracing:
+
+```bash
+# Pass your own correlation ID
+curl -H "X-Correlation-ID: my-trace-123" http://localhost:8080/api/v1/products
+
+# Response headers include the ID
+< X-Correlation-ID: my-trace-123
 ```
 
-## 🎯 Implementation Phases
+Logs include correlation IDs:
 
-- [x] **Phase 0**: Project scaffolding & infrastructure
-- [ ] **Phase 1**: Product Catalog (MongoDB) - REST API complete
-- [ ] **Phase 2**: Configuration & Validation Rules
-- [ ] **Phase 3**: Pricing Engine with Strategy Pattern
-- [ ] **Phase 4**: Quote Service with async PDF generation
-- [ ] **Phase 5**: Integration & Polish
+```
+2024-01-15 10:30:45.123 [http-nio-8080-exec-1] [abc-123-def] INFO ProductController - Fetching all products
+```
 
-## 🔧 Configuration
+## 📋 Complete CPQ Flow
 
-### Environment Variables
+```bash
+# 1. Browse catalog
+curl http://localhost:8080/api/v1/products?type=RACK
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SPRING_PROFILES_ACTIVE` | dev | Active profile |
-| `MONGODB_URI` | mongodb://localhost:27017 | MongoDB connection |
-| `POSTGRES_URL` | jdbc:postgresql://localhost:5432/quotes | PostgreSQL connection |
-| `RABBITMQ_HOST` | localhost | RabbitMQ host |
+# 2. Create configuration
+CONFIG_ID=$(curl -s -X POST http://localhost:8081/api/v1/configurations \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Production Rack", "customerId": "acme", "rackSku": "RACK-42U-STD"}' \
+  | jq -r '.data.id')
 
-### Docker Compose Services
+# 3. Add components
+curl -X POST "http://localhost:8081/api/v1/configurations/$CONFIG_ID/components" \
+  -H "Content-Type: application/json" \
+  -d '{"productSku": "SW-CATALYST-9300-48", "quantity": 6}'
 
-| Service | Port | Credentials |
-|---------|------|-------------|
-| MongoDB | 27017 | netconfig / netconfig123 |
-| PostgreSQL | 5432 | netconfig / netconfig123 |
-| RabbitMQ | 5672, 15672 | netconfig / netconfig123 |
-| Mongo Express | 8081 | - |
-| pgAdmin | 8082 | admin@netconfig.local / admin123 |
+curl -X POST "http://localhost:8081/api/v1/configurations/$CONFIG_ID/components" \
+  -H "Content-Type: application/json" \
+  -d '{"productSku": "PSU-2000W-TITANIUM", "quantity": 2}'
 
-## 📖 Design Patterns Used
+# 4. Validate
+curl -X POST "http://localhost:8081/api/v1/configurations/$CONFIG_ID/validate" | jq
 
-1. **Strategy Pattern** - Pricing strategies (VolumeDiscount, PartnerDiscount)
-2. **Chain of Responsibility** - Configuration validation rules
-3. **Event-Driven** - Quote generation with RabbitMQ
-4. **Repository Pattern** - Data access layer
-5. **DTO Pattern** - API response wrapping
+# 5. Get pricing
+curl -X POST http://localhost:8082/api/v1/pricing/calculate \
+  -H "Content-Type: application/json" \
+  -d "{\"configurationId\": \"$CONFIG_ID\", \"customerTier\": \"PARTNER\"}" | jq
 
-## 📝 License
+# 6. Generate quote
+QUOTE=$(curl -s -X POST http://localhost:8083/api/v1/quotes \
+  -H "Content-Type: application/json" \
+  -d "{\"configurationId\": \"$CONFIG_ID\", \"customerName\": \"Acme Corp\"}")
+QUOTE_ID=$(echo $QUOTE | jq -r '.data.id')
+
+# 7. Wait for PDF and accept
+sleep 3
+curl -X POST "http://localhost:8083/api/v1/quotes/$QUOTE_ID/accept" | jq
+```
+
+## 🎨 Web UI
+
+The built-in web UI provides a visual interface for the complete CPQ flow:
+
+1. Browse and filter products by type
+2. Select a base rack and add components
+3. Validate configuration with real-time feedback
+4. Calculate pricing with discounts
+5. Generate and accept quotes
+
+Access at: **http://localhost:8080**
+
+## 🛑 Stopping Services
+
+```bash
+# Stop services
+./scripts/stop-services.sh
+
+# Stop infrastructure
+docker compose down
+
+# Clean everything (including data)
+docker compose down -v
+```
+
+## 📚 Learning Objectives
+
+This project demonstrates:
+
+1. **Microservices Architecture** - Independent, deployable services
+2. **Polyglot Persistence** - Right database for each use case
+3. **Event-Driven Design** - Async processing with message queues
+4. **Design Patterns** - Strategy, Chain of Responsibility
+5. **API Design** - RESTful APIs with OpenAPI documentation
+6. **Observability** - Correlation IDs, structured logging
+7. **Domain Logic** - Complex business rules in code
+
+## 📄 License
 
 MIT License - See [LICENSE](LICENSE) for details.

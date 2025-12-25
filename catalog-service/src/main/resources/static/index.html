@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NetConfig CPQ - Network Hardware Configurator</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0a0f;
+            --bg-secondary: #12121a;
+            --bg-tertiary: #1a1a24;
+            --accent-cyan: #00d4ff;
+            --accent-purple: #8b5cf6;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --text-primary: #e4e4e7;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-color: #27272a;
+            --gradient-1: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 100%);
+            --gradient-2: linear-gradient(135deg, #10b981 0%, #00d4ff 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Space Grotesk', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at 20% 20%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding: 2rem 0;
+        }
+
+        .logo {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: var(--gradient-1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .tagline {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .cpq-flow {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 2rem 0;
+            flex-wrap: wrap;
+        }
+
+        .flow-step {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.875rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .flow-step:hover, .flow-step.active {
+            border-color: var(--accent-cyan);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        .flow-step.completed {
+            border-color: var(--accent-green);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .flow-step .number {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--gradient-1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 0.75rem;
+            color: #000;
+        }
+
+        .arrow {
+            color: var(--text-muted);
+            font-size: 1.5rem;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .panel-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .panel-title {
+            font-size: 1rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .panel-title .icon {
+            font-size: 1.25rem;
+        }
+
+        .panel-body {
+            padding: 1.5rem;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .product-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .product-card:hover {
+            border-color: var(--accent-cyan);
+            transform: translateY(-2px);
+        }
+
+        .product-type {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .product-type.RACK { background: rgba(139, 92, 246, 0.2); color: var(--accent-purple); }
+        .product-type.SWITCH { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+        .product-type.PSU { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+        .product-type.CABLE { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .product-type.SFP_MODULE { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+
+        .product-name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .product-sku {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        .product-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--accent-green);
+        }
+
+        .config-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 0.75rem;
+        }
+
+        .config-item-info {
+            flex: 1;
+        }
+
+        .config-item-name {
+            font-weight: 500;
+            margin-bottom: 0.25rem;
+        }
+
+        .config-item-sku {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .config-item-qty {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .qty-btn {
+            width: 28px;
+            height: 28px;
+            border: 1px solid var(--border-color);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .qty-btn:hover {
+            border-color: var(--accent-cyan);
+            background: rgba(0, 212, 255, 0.1);
+        }
+
+        .qty-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 600;
+            min-width: 30px;
+            text-align: center;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-family: 'Space Grotesk', sans-serif;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--gradient-1);
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-cyan);
+        }
+
+        .btn-success {
+            background: var(--accent-green);
+            color: #000;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-row.total {
+            border-bottom: none;
+            font-size: 1.25rem;
+            font-weight: 700;
+            padding-top: 1rem;
+        }
+
+        .summary-row.total .value {
+            color: var(--accent-green);
+        }
+
+        .summary-row .label {
+            color: var(--text-secondary);
+        }
+
+        .discount-tag {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+            border-radius: 4px;
+            margin-left: 0.5rem;
+        }
+
+        .validation-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+
+        .validation-badge.valid {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--accent-green);
+        }
+
+        .validation-badge.invalid {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--accent-red);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--accent-cyan);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 1rem 1.5rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success { border-color: var(--accent-green); }
+        .toast.error { border-color: var(--accent-red); }
+
+        .quote-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .quote-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .quote-number {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--accent-cyan);
+        }
+
+        .quote-status {
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .quote-status.PENDING { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+        .quote-status.READY { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .quote-status.ACCEPTED { background: rgba(0, 212, 255, 0.2); color: var(--accent-cyan); }
+
+        .services-status {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .service-badge {
+            padding: 0.75rem;
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.875rem;
+        }
+
+        .service-badge .name {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .service-badge .status {
+            font-size: 0.75rem;
+            color: var(--accent-green);
+        }
+
+        .service-badge.offline .status {
+            color: var(--accent-red);
+        }
+
+        .rack-select {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        .rack-select:focus {
+            outline: none;
+            border-color: var(--accent-cyan);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .tab {
+            padding: 0.5rem 1rem;
+            background: transparent;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-family: 'Space Grotesk', sans-serif;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            background: var(--accent-cyan);
+            color: #000;
+            border-color: var(--accent-cyan);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo">⚡ NetConfig</div>
+            <p class="tagline">Network Hardware Configure-Price-Quote Engine</p>
+        </header>
+
+        <div class="services-status" id="servicesStatus">
+            <div class="service-badge" id="catalog-status">
+                <div class="name">📦 Catalog</div>
+                <div class="status">Checking...</div>
+            </div>
+            <div class="service-badge" id="config-status">
+                <div class="name">⚙️ Config</div>
+                <div class="status">Checking...</div>
+            </div>
+            <div class="service-badge" id="pricing-status">
+                <div class="name">💰 Pricing</div>
+                <div class="status">Checking...</div>
+            </div>
+            <div class="service-badge" id="quote-status">
+                <div class="name">📄 Quote</div>
+                <div class="status">Checking...</div>
+            </div>
+        </div>
+
+        <div class="cpq-flow">
+            <div class="flow-step active" id="step-configure">
+                <span class="number">1</span>
+                <span>Configure</span>
+            </div>
+            <span class="arrow">→</span>
+            <div class="flow-step" id="step-validate">
+                <span class="number">2</span>
+                <span>Validate</span>
+            </div>
+            <span class="arrow">→</span>
+            <div class="flow-step" id="step-price">
+                <span class="number">3</span>
+                <span>Price</span>
+            </div>
+            <span class="arrow">→</span>
+            <div class="flow-step" id="step-quote">
+                <span class="number">4</span>
+                <span>Quote</span>
+            </div>
+        </div>
+
+        <div class="main-grid">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">📦</span>
+                        Product Catalog
+                    </div>
+                    <div class="tabs">
+                        <button class="tab active" data-type="all">All</button>
+                        <button class="tab" data-type="RACK">Racks</button>
+                        <button class="tab" data-type="SWITCH">Switches</button>
+                        <button class="tab" data-type="PSU">PSUs</button>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div class="product-grid" id="productGrid">
+                        <div class="loading"><div class="spinner"></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">🖥️</span>
+                        Rack Configuration
+                    </div>
+                    <span class="validation-badge" id="validationBadge" style="display: none;">
+                        ✓ Valid
+                    </span>
+                </div>
+                <div class="panel-body">
+                    <select class="rack-select" id="rackSelect">
+                        <option value="">Select a base rack...</option>
+                    </select>
+                    
+                    <div id="configItems">
+                        <div class="empty-state">
+                            <div class="icon">🔧</div>
+                            <p>Click products to add to configuration</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 1.5rem; display: flex; gap: 1rem;">
+                        <button class="btn btn-secondary" id="validateBtn" disabled>
+                            ✓ Validate
+                        </button>
+                        <button class="btn btn-primary" id="priceBtn" disabled>
+                            💰 Calculate Price
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-grid" style="margin-top: 2rem;">
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">💰</span>
+                        Pricing Summary
+                    </div>
+                </div>
+                <div class="panel-body" id="pricingSummary">
+                    <div class="empty-state">
+                        <div class="icon">📊</div>
+                        <p>Validate configuration to see pricing</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="panel">
+                <div class="panel-header">
+                    <div class="panel-title">
+                        <span class="icon">📄</span>
+                        Generated Quote
+                    </div>
+                </div>
+                <div class="panel-body" id="quotePanel">
+                    <div class="empty-state">
+                        <div class="icon">📝</div>
+                        <p>Generate a quote after pricing</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">
+        <span class="message"></span>
+    </div>
+
+    <script>
+        // API endpoints
+        const API = {
+            catalog: 'http://localhost:8080/api/v1',
+            config: 'http://localhost:8081/api/v1',
+            pricing: 'http://localhost:8082/api/v1',
+            quote: 'http://localhost:8083/api/v1'
+        };
+
+        // State
+        let products = [];
+        let configuration = null;
+        let configItems = [];
+        let pricing = null;
+        let currentFilter = 'all';
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkServices();
+            await loadProducts();
+            setupEventListeners();
+        });
+
+        // Check service health
+        async function checkServices() {
+            const services = [
+                { id: 'catalog-status', url: 'http://localhost:8080/actuator/health' },
+                { id: 'config-status', url: 'http://localhost:8081/actuator/health' },
+                { id: 'pricing-status', url: 'http://localhost:8082/actuator/health' },
+                { id: 'quote-status', url: 'http://localhost:8083/actuator/health' }
+            ];
+
+            for (const service of services) {
+                const el = document.getElementById(service.id);
+                try {
+                    const res = await fetch(service.url);
+                    const data = await res.json();
+                    el.querySelector('.status').textContent = data.status === 'UP' ? '● Online' : '○ Offline';
+                    el.classList.toggle('offline', data.status !== 'UP');
+                } catch {
+                    el.querySelector('.status').textContent = '○ Offline';
+                    el.classList.add('offline');
+                }
+            }
+        }
+
+        // Load products
+        async function loadProducts() {
+            try {
+                const res = await fetch(`${API.catalog}/products`);
+                const data = await res.json();
+                products = data.data || [];
+                renderProducts();
+                populateRackSelect();
+            } catch (err) {
+                showToast('Failed to load products', 'error');
+            }
+        }
+
+        // Render products
+        function renderProducts() {
+            const grid = document.getElementById('productGrid');
+            const filtered = currentFilter === 'all' 
+                ? products 
+                : products.filter(p => p.type === currentFilter);
+
+            if (filtered.length === 0) {
+                grid.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>No products found</p></div>';
+                return;
+            }
+
+            grid.innerHTML = filtered.map(p => `
+                <div class="product-card" onclick="addToConfig('${p.sku}')">
+                    <span class="product-type ${p.type}">${p.type}</span>
+                    <div class="product-name">${p.name}</div>
+                    <div class="product-sku">${p.sku}</div>
+                    <div class="product-price">$${p.basePrice.toLocaleString()}</div>
+                </div>
+            `).join('');
+        }
+
+        // Populate rack select
+        function populateRackSelect() {
+            const select = document.getElementById('rackSelect');
+            const racks = products.filter(p => p.type === 'RACK');
+            select.innerHTML = '<option value="">Select a base rack...</option>' +
+                racks.map(r => `<option value="${r.sku}">${r.name} - $${r.basePrice.toLocaleString()}</option>`).join('');
+        }
+
+        // Add to configuration
+        function addToConfig(sku) {
+            const product = products.find(p => p.sku === sku);
+            if (!product) return;
+
+            // If it's a rack, set it as the base rack
+            if (product.type === 'RACK') {
+                document.getElementById('rackSelect').value = sku;
+                updateButtons();
+                showToast(`Selected ${product.name} as base rack`);
+                return;
+            }
+
+            const existing = configItems.find(i => i.sku === sku);
+            if (existing) {
+                existing.quantity++;
+            } else {
+                configItems.push({ sku, name: product.name, quantity: 1 });
+            }
+
+            renderConfigItems();
+            updateButtons();
+            showToast(`Added ${product.name}`);
+        }
+
+        // Update quantity
+        function updateQty(sku, delta) {
+            const item = configItems.find(i => i.sku === sku);
+            if (!item) return;
+
+            item.quantity += delta;
+            if (item.quantity <= 0) {
+                configItems = configItems.filter(i => i.sku !== sku);
+            }
+
+            renderConfigItems();
+            updateButtons();
+        }
+
+        // Render config items
+        function renderConfigItems() {
+            const container = document.getElementById('configItems');
+            
+            if (configItems.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">🔧</div>
+                        <p>Click products to add to configuration</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = configItems.map(item => `
+                <div class="config-item">
+                    <div class="config-item-info">
+                        <div class="config-item-name">${item.name}</div>
+                        <div class="config-item-sku">${item.sku}</div>
+                    </div>
+                    <div class="config-item-qty">
+                        <button class="qty-btn" onclick="updateQty('${item.sku}', -1)">−</button>
+                        <span class="qty-value">${item.quantity}</span>
+                        <button class="qty-btn" onclick="updateQty('${item.sku}', 1)">+</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Update buttons
+        function updateButtons() {
+            const rackSelected = document.getElementById('rackSelect').value;
+            const hasItems = configItems.length > 0;
+            
+            document.getElementById('validateBtn').disabled = !rackSelected || !hasItems;
+            document.getElementById('priceBtn').disabled = !configuration || !configuration.validated;
+        }
+
+        // Validate configuration
+        async function validateConfig() {
+            const rackSku = document.getElementById('rackSelect').value;
+            if (!rackSku) return;
+
+            try {
+                // Create configuration
+                const createRes = await fetch(`${API.config}/configurations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: 'Web UI Configuration',
+                        customerId: 'web-user',
+                        rackSku
+                    })
+                });
+                const createData = await createRes.json();
+                configuration = createData.data;
+
+                // Add components
+                for (const item of configItems) {
+                    await fetch(`${API.config}/configurations/${configuration.id}/components`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ productSku: item.sku, quantity: item.quantity })
+                    });
+                }
+
+                // Validate
+                const validateRes = await fetch(`${API.config}/configurations/${configuration.id}/validate`, {
+                    method: 'POST'
+                });
+                const validateData = await validateRes.json();
+                const validation = validateData.data;
+
+                const badge = document.getElementById('validationBadge');
+                badge.style.display = 'inline-flex';
+                
+                if (validation.valid) {
+                    badge.className = 'validation-badge valid';
+                    badge.innerHTML = '✓ Valid';
+                    configuration.validated = true;
+                    setStepCompleted('step-validate');
+                    showToast('Configuration is valid!', 'success');
+                } else {
+                    badge.className = 'validation-badge invalid';
+                    badge.innerHTML = '✗ Invalid';
+                    configuration.validated = false;
+                    showToast(validation.allErrors?.[0] || 'Validation failed', 'error');
+                }
+
+                updateButtons();
+            } catch (err) {
+                showToast('Validation failed: ' + err.message, 'error');
+            }
+        }
+
+        // Calculate price
+        async function calculatePrice() {
+            if (!configuration?.validated) return;
+
+            try {
+                const res = await fetch(`${API.pricing}/pricing/calculate`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        configurationId: configuration.id,
+                        customerTier: 'PARTNER',
+                        options: { include_support: true, support_tier: 'PREMIUM' }
+                    })
+                });
+                const data = await res.json();
+                pricing = data.data;
+
+                renderPricing();
+                setStepCompleted('step-price');
+                showToast('Pricing calculated!', 'success');
+            } catch (err) {
+                showToast('Pricing failed: ' + err.message, 'error');
+            }
+        }
+
+        // Render pricing
+        function renderPricing() {
+            const container = document.getElementById('pricingSummary');
+            
+            if (!pricing) {
+                container.innerHTML = '<div class="empty-state"><div class="icon">📊</div><p>Validate configuration to see pricing</p></div>';
+                return;
+            }
+
+            const discounts = pricing.discountDescriptions || [];
+            
+            container.innerHTML = `
+                <div class="summary-row">
+                    <span class="label">Subtotal</span>
+                    <span>$${pricing.subtotal?.toLocaleString() || 0}</span>
+                </div>
+                ${discounts.map(d => `
+                    <div class="summary-row">
+                        <span class="label">${d.split(' - ')[0]}</span>
+                        <span class="discount-tag">-${d.split('saved ')[1] || ''}</span>
+                    </div>
+                `).join('')}
+                <div class="summary-row">
+                    <span class="label">Total Discount</span>
+                    <span style="color: var(--accent-green)">-$${pricing.totalDiscount?.toLocaleString() || 0}</span>
+                </div>
+                <div class="summary-row">
+                    <span class="label">24/7 Premium Support</span>
+                    <span>+$${pricing.serviceAddOn?.toLocaleString() || 0}</span>
+                </div>
+                <div class="summary-row total">
+                    <span class="label">Grand Total</span>
+                    <span class="value">$${pricing.grandTotal?.toLocaleString() || 0}</span>
+                </div>
+                <button class="btn btn-success" style="width: 100%; margin-top: 1.5rem;" onclick="generateQuote()">
+                    📄 Generate Quote
+                </button>
+            `;
+        }
+
+        // Generate quote
+        async function generateQuote() {
+            if (!configuration || !pricing) return;
+
+            try {
+                const res = await fetch(`${API.quote}/quotes`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        configurationId: configuration.id,
+                        customerName: 'Demo Customer',
+                        customerEmail: 'demo@example.com',
+                        customerTier: 'PARTNER',
+                        includeSupport: true,
+                        supportTier: 'PREMIUM'
+                    })
+                });
+                const data = await res.json();
+                const quote = data.data;
+
+                renderQuote(quote);
+                setStepCompleted('step-quote');
+                showToast('Quote generated!', 'success');
+
+                // Poll for PDF ready
+                pollQuoteStatus(quote.id);
+            } catch (err) {
+                showToast('Quote generation failed: ' + err.message, 'error');
+            }
+        }
+
+        // Poll quote status
+        async function pollQuoteStatus(quoteId) {
+            const maxAttempts = 10;
+            let attempts = 0;
+
+            const poll = async () => {
+                if (attempts >= maxAttempts) return;
+                attempts++;
+
+                try {
+                    const res = await fetch(`${API.quote}/quotes/${quoteId}`);
+                    const data = await res.json();
+                    const quote = data.data;
+
+                    renderQuote(quote);
+
+                    if (quote.status === 'PENDING' || quote.status === 'GENERATING') {
+                        setTimeout(poll, 1000);
+                    }
+                } catch (err) {
+                    console.error('Poll failed:', err);
+                }
+            };
+
+            setTimeout(poll, 1000);
+        }
+
+        // Render quote
+        function renderQuote(quote) {
+            const container = document.getElementById('quotePanel');
+            
+            container.innerHTML = `
+                <div class="quote-card">
+                    <div class="quote-header">
+                        <div>
+                            <div class="quote-number">${quote.quoteNumber}</div>
+                            <div style="color: var(--text-muted); font-size: 0.875rem;">
+                                Valid until ${new Date(quote.expiresAt).toLocaleDateString()}
+                            </div>
+                        </div>
+                        <span class="quote-status ${quote.status}">${quote.status}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Customer</span>
+                        <span>${quote.customerName || 'N/A'}</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="label">Items</span>
+                        <span>${quote.lineItems?.length || 0} products</span>
+                    </div>
+                    <div class="summary-row total">
+                        <span class="label">Total</span>
+                        <span class="value">$${quote.grandTotal?.toLocaleString() || 0}</span>
+                    </div>
+                    ${quote.pdfUrl ? `
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(16, 185, 129, 0.1); border-radius: 8px; text-align: center;">
+                            <span style="color: var(--accent-green);">✓ PDF Ready</span>
+                        </div>
+                    ` : `
+                        <div style="margin-top: 1rem; padding: 1rem; background: rgba(245, 158, 11, 0.1); border-radius: 8px; text-align: center;">
+                            <span style="color: var(--accent-orange);">⏳ Generating PDF...</span>
+                        </div>
+                    `}
+                    <button class="btn btn-primary" style="width: 100%; margin-top: 1rem;" onclick="acceptQuote('${quote.id}')">
+                        ✓ Accept Quote
+                    </button>
+                </div>
+            `;
+        }
+
+        // Accept quote
+        async function acceptQuote(quoteId) {
+            try {
+                const res = await fetch(`${API.quote}/quotes/${quoteId}/accept`, { method: 'POST' });
+                const data = await res.json();
+                renderQuote(data.data);
+                showToast('Quote accepted!', 'success');
+            } catch (err) {
+                showToast('Failed to accept quote', 'error');
+            }
+        }
+
+        // Set step completed
+        function setStepCompleted(stepId) {
+            document.getElementById(stepId).classList.add('completed');
+        }
+
+        // Show toast
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.querySelector('.message').textContent = message;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Setup event listeners
+        function setupEventListeners() {
+            // Tab filtering
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    currentFilter = tab.dataset.type;
+                    renderProducts();
+                });
+            });
+
+            // Rack select
+            document.getElementById('rackSelect').addEventListener('change', updateButtons);
+
+            // Validate button
+            document.getElementById('validateBtn').addEventListener('click', validateConfig);
+
+            // Price button
+            document.getElementById('priceBtn').addEventListener('click', calculatePrice);
+        }
+    </script>
+</body>
+</html>
+

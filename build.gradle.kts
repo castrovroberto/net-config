@@ -29,6 +29,9 @@ subprojects {
         "implementation"("org.springframework.boot:spring-boot-starter-actuator")
         "implementation"("org.springframework.boot:spring-boot-starter-validation")
         
+        // OpenAPI / Swagger documentation
+        "implementation"("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0")
+        
         // Lombok
         "compileOnly"("org.projectlombok:lombok")
         "annotationProcessor"("org.projectlombok:lombok")
